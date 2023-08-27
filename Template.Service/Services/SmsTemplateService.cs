@@ -23,10 +23,12 @@ public class SmsTemplateService : ISmsTemplateService
 
     public async Task<TemplateResponse> CreateTemplate(CreateTemplateRequest createTemplateRequest)
     {
+        if (createTemplateRequest.text == null) throw new BadRequestException(" text is null");
+
         var template = new SmsTemplateModel()
         {
             Id = Guid.NewGuid(),
-            Text = TextHelper.CheckNewText(createTemplateRequest.text),
+            Text = createTemplateRequest.text,
             IsDeleted = false,
         };
         if (createTemplateRequest.text == null || createTemplateRequest.text == " ")
@@ -131,6 +133,8 @@ public class SmsTemplateService : ISmsTemplateService
     }
     public async Task<TemplateResponse> UpdateTemplate(EditTemplateRequest editTemplateRequest)
     {
+        if (editTemplateRequest.Text == null) throw new BadRequestException(editTemplateRequest.Text + " is null");
+
         var commandresult = await _AuditService.CreateAudit(new AuditModel()
         {
             Id = Guid.NewGuid(),
@@ -144,9 +148,8 @@ public class SmsTemplateService : ISmsTemplateService
         {
             var template = await _TemplateRepository.GetByIdAsync(editTemplateRequest.Id);
             if (template == null || template.IsDeleted) { throw new NotFoundException("template not found"); }
-
-            template.Text = TextHelper.CheckNewText(editTemplateRequest.Text);
-
+            
+            template.Text= editTemplateRequest.Text;
             await _TemplateRepository.UpdateAsync(template);
 
             return new TemplateResponse() { Text = template.Text, Id = template.Id };
@@ -170,7 +173,7 @@ public class SmsTemplateService : ISmsTemplateService
 
         if (commandresult.IsSuccess)
         {
-            return TextHelper.ReturnDictionaryKeysFromText(reuslt.Text);
+            return TextHelper.GetKeysFromText(reuslt.Text);
 
         }
         else { throw new BadRequestException(); }
